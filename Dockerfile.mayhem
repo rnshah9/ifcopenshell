@@ -23,6 +23,5 @@ RUN ldd /repo/cmake/build/IfcConvert | tr -s '[:blank:]' '\n' | grep '^/' | xarg
 FROM ubuntu:22.04 as package
 
 COPY --from=builder /deps /deps
-COPY --from=builder /repo/cmake/build/IfcConvert /repocmake/build/IfcConverte
+COPY --from=builder /repo/cmake/build/IfcConvert /repo/cmake/build/IfcConvert
 ENV LD_LIBRARY_PATH=/deps
-
