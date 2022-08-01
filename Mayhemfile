@@ -3,6 +3,6 @@ target: ifcconvert
 testsuite:
   - file://src/blenderbim/test/files/ifc2x3.ifc
 cmds:
-  - cmd: /install/bin/IfcConvert @@
+  - cmd: /repo/cmake/build/IfcConvert @@
     env:
       DISABLE_SMOKETEST: '1'
