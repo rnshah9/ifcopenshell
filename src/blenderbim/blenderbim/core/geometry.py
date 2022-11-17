@@ -83,7 +83,6 @@ def switch_representation(
     obj=None,
     representation=None,
     should_reload=True,
-    enable_dynamic_voids=True,
     is_global=True,
     should_sync_changes_first=False,
 ):
@@ -97,7 +96,7 @@ def switch_representation(
     existing_data = geometry.get_representation_data(representation)
 
     if should_reload or not existing_data:
-        data = geometry.import_representation(obj, representation, enable_dynamic_voids=enable_dynamic_voids)
+        data = geometry.import_representation(obj, representation)
         geometry.rename_object(data, geometry.get_representation_name(representation))
         geometry.link(representation, data)
     else:
@@ -109,9 +108,6 @@ def switch_representation(
         geometry.delete_data(existing_data)
 
     geometry.clear_modifiers(obj)
-
-    if enable_dynamic_voids and geometry.is_body_representation(representation):
-        geometry.create_dynamic_voids(obj)
 
 
 def get_representation_ifc_parameters(geometry, obj=None, should_sync_changes_first=False):
@@ -140,3 +136,11 @@ def remove_representation(ifc, geometry, obj=None, representation=None):
             geometry.replace_object_with_empty(obj)
         ifc.run("geometry.unassign_representation", product=element, representation=representation)
         ifc.run("geometry.remove_representation", representation=representation)
+
+
+def select_connection(geometry, connection=None):
+    geometry.select_connection(connection)
+
+
+def remove_connection(geometry, connection=None):
+    geometry.remove_connection(connection)

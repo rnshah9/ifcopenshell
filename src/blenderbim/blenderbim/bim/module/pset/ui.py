@@ -88,6 +88,10 @@ def draw_psetqto_ui(context, pset_id, pset, props, layout, obj_type):
     obj_name = get_active_pset_obj_name(context, obj_type)
     if not props.active_pset_id:
         row.label(text=pset["Name"], icon="COPY_ID")
+        op = row.operator("bim.guess_all_quantities", icon="FILE_REFRESH", text="")
+        op.pset_id = pset_id
+        op.obj_name = obj_name
+        op.obj_type = obj_type
         op = row.operator("bim.enable_pset_editing", icon="GREASEPENCIL", text="")
         op.pset_id = pset_id
         op.obj = obj_name
@@ -135,6 +139,10 @@ def draw_psetqto_ui(context, pset_id, pset, props, layout, obj_type):
 def draw_psetqto_editable_ui(box, props, prop):
     row = box.row(align=True)
     draw_property(prop, row, copy_operator="bim.copy_property_to_selection")
+    if prop.metadata.has_calculator:
+        op = row.operator("bim.calculate_quantity", icon="MOD_EDGESPLIT", text="")
+        op.prop = prop.name
+    # Old "guess quantity" feature to be removed once new calculator is comprehensive
     if (
         "length" in prop.name.lower()
         or "width" in prop.name.lower()

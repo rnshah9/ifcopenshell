@@ -20,6 +20,7 @@ import bpy
 import ifcopenshell.util.attribute
 import ifcopenshell.api
 import blenderbim.bim.helper
+import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.group.data import Data
 from ifcopenshell.util.selector import Selector
@@ -41,7 +42,7 @@ class LoadGroups(bpy.types.Operator):
             context.scene.ExpandedGroups.json_string = "{}"
 
         for ifc_definition_id, group in Data.groups.items():
-            if not group["HasAssignments"]:          
+            if not group["HasAssignments"]:
                 new = self.props.groups.add()
                 new.ifc_definition_id = ifc_definition_id
                 new.name = group["Name"]
@@ -50,7 +51,7 @@ class LoadGroups(bpy.types.Operator):
 
                 if group["IsGroupedBy"]:
                     #  assumes 1:1 cardinality, will need to be updated to reflect IFC4 changes
-                    # where the cardinality is 0:? - vulevukusej     
+                    # where the cardinality is 0:? - vulevukusej
                     sub_groups = [g for g in group["IsGroupedBy"][0].RelatedObjects if g.is_a("IfcGroup")]
                     new.has_children = True if len(sub_groups) != 0 else False
 
@@ -120,37 +121,19 @@ class AddGroup(bpy.types.Operator):
     bl_idname = "bim.add_group"
     bl_label = "Add New Group"
     bl_options = {"REGISTER", "UNDO"}
+    group: bpy.props.IntProperty()
 
     def execute(self, context):
         return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
-        result = ifcopenshell.api.run("group.add_group", IfcStore.get_file())
-        Data.load(IfcStore.get_file())
-
+        result = ifcopenshell.api.run("group.add_group", tool.Ifc.get())
+        if self.group:
+            ifcopenshell.api.run(
+                "group.assign_group", tool.Ifc.get(), products=[result], group=tool.Ifc.get().by_id(self.group)
+            )
+        Data.load(tool.Ifc.get())
         bpy.ops.bim.load_groups(is_refresh=True)
-        bpy.ops.bim.enable_editing_group(group=result.id())
-        return {"FINISHED"}
-
-
-class AddGroupToGroup(bpy.types.Operator):
-    bl_idname = "bim.add_group_to_group"
-    bl_label = "Add Group to Group"
-    bl_options = {"REGISTER", "UNDO"}
-    group: bpy.props.IntProperty(name="Group ID")
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
-
-    def _execute(self, context):
-        self.file = IfcStore.get_file()
-        result = ifcopenshell.api.run("group.add_group", self.file)
-        ifcopenshell.api.run(
-            "group.assign_group", IfcStore.get_file(), **{"product": [result], "group": self.file.by_id(self.group)}
-        )
-        Data.load(IfcStore.get_file())
-        bpy.ops.bim.load_groups(is_refresh=True)
-        bpy.ops.bim.disable_group_editing_ui()
         return {"FINISHED"}
 
 
@@ -255,10 +238,8 @@ class AssignGroup(bpy.types.Operator):
             ifcopenshell.api.run(
                 "group.assign_group",
                 self.file,
-                **{
-                    "product": [self.file.by_id(product.BIMObjectProperties.ifc_definition_id)],
-                    "group": self.file.by_id(self.group),
-                }
+                products=[self.file.by_id(product.BIMObjectProperties.ifc_definition_id)],
+                group=self.file.by_id(self.group),
             )
         Data.load(self.file)
         return {"FINISHED"}
@@ -332,7 +313,6 @@ class UpdateGroup(bpy.types.Operator):
             **{
                 "group": group,
                 "products": new_products,
-                
             }
         )
         Data.load(IfcStore.get_file())

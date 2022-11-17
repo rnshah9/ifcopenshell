@@ -451,7 +451,7 @@ class EditHeader(bpy.types.Operator):
     bl_idname = "bim.edit_header"
     bl_label = "Edit Header"
     bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Save header informations"
+    bl_description = "Save header information"
 
     @classmethod
     def poll(cls, context):
@@ -507,7 +507,7 @@ class DisableEditingHeader(bpy.types.Operator):
     bl_idname = "bim.disable_editing_header"
     bl_label = "Disable Editing Header"
     bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Cancel unsaved header informations"
+    bl_description = "Cancel unsaved header information"
 
     def execute(self, context):
         context.scene.BIMProjectProperties.is_editing = False
@@ -591,6 +591,10 @@ class LoadProjectElements(bpy.types.Operator):
         settings.logger.info("Import finished in {:.2f} seconds".format(time.time() - start))
         print("Import finished in {:.2f} seconds".format(time.time() - start))
         context.scene.BIMProjectProperties.is_loading = False
+
+        tool.Project.load_default_thumbnails()
+        tool.Project.set_default_context()
+        tool.Project.set_default_modeling_dimensions()
         return {"FINISHED"}
 
     def get_decomposition_elements(self):
@@ -672,7 +676,7 @@ class LinkIfc(bpy.types.Operator):
     use_relative_path: bpy.props.BoolProperty(name="Use Relative Path", default=False)
 
     def execute(self, context):
-        files = [self.filepath] if self.filepath else [f.name for f in self.files]
+        files = [f.name for f in self.files] if self.files else [self.filepath]
         for filename in files:
             filepath = os.path.join(self.directory, filename)
             new = context.scene.BIMProjectProperties.links.add()
@@ -795,7 +799,7 @@ class ToggleLinkVisibility(bpy.types.Operator):
             link.is_hidden = layer_collection.exclude
 
     def get_linked_collections(self):
-        return  [
+        return [
             c for c in bpy.data.collections if "IfcProject" in c.name and c.library and c.library.filepath == self.link
         ]
 
@@ -828,7 +832,16 @@ class ExportIFC(bpy.types.Operator):
         return {"RUNNING_MODAL"}
 
     def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
+        if context.scene.BIMProjectProperties.should_disable_undo_on_save:
+            old_history_size = tool.Ifc.get().history_size
+            old_undo_steps = context.preferences.edit.undo_steps
+            tool.Ifc.get().history_size = 0
+            context.preferences.edit.undo_steps = 0
+        IfcStore.execute_ifc_operator(self, context)
+        if context.scene.BIMProjectProperties.should_disable_undo_on_save:
+            tool.Ifc.get().history_size = old_history_size
+            context.preferences.edit.undo_steps = old_undo_steps
+        return {"FINISHED"}
 
     def _execute(self, context):
         start = time.time()

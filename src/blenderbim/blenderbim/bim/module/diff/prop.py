@@ -18,6 +18,7 @@
 
 import bpy
 from blenderbim.bim.prop import StrProperty
+from blenderbim.bim.module.diff.data import DiffData
 from bpy.types import PropertyGroup
 from bpy.props import (
     PointerProperty,
@@ -30,16 +31,21 @@ from bpy.props import (
     CollectionProperty,
 )
 
+
+def update_diff_json_file(self, context):
+    DiffData.data["diff_json"] = DiffData.diff_json()
+
+
 class Relationships(PropertyGroup):
     relationship: EnumProperty(
         name="Relationship",
-        items=[(r,r,r) for r in ["type", "property", "container", "aggregate", "classification"]],
+        items=[(r, r.capitalize(), r) for r in ["type", "property", "container", "aggregate", "classification"]],
     )
 
+
 class DiffProperties(PropertyGroup):
-    diff_json_file: StringProperty(default="", name="Diff JSON File")
-    diff_old_file: StringProperty(default="", name="Diff Old IFC File")
-    diff_new_file: StringProperty(default="", name="Diff New IFC File")
-    diff_relationships: CollectionProperty(type=Relationships, name="Diff Relationships")
-    diff_filter_elements: StringProperty(default="", name="Diff Filter")
-    diff_result: StringProperty(default="", name="Diff Result")
+    diff_json_file: StringProperty(default="", name="JSON Output", update=update_diff_json_file)
+    old_file: StringProperty(default="", name="Old IFC File")
+    new_file: StringProperty(default="", name="New IFC File")
+    diff_relationships: CollectionProperty(type=Relationships, name="Relationships")
+    diff_filter_elements: StringProperty(default="", name="Filter")

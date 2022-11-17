@@ -83,6 +83,8 @@ class SelectGlobalId(Operator):
         global_id = self.global_id or props.global_id
         entity = ifc_file.by_guid(global_id)
         obj = tool.Ifc.get_object(entity)
+        if not obj:
+            self.report({"ERROR"}, "No object found")
         obj.select_set(True)
         bpy.context.view_layer.objects.active = obj
         return {"FINISHED"}
@@ -546,7 +548,8 @@ class FilterModelElements(Operator):
                 if obj.BIMObjectProperties.ifc_definition_id in sel_element_ids:
                     obj.hide_set(True)
 
-#This needs to be moved into ui code, I know ;) - vulevukusej
+
+# This needs to be moved into ui code, I know ;) - vulevukusej
 class IfcSelector(Operator):
     """Select elements in model with IFC Selector"""
 
@@ -565,6 +568,7 @@ class IfcSelector(Operator):
 
     def draw(self, context):
         from . import ui
+
         ui.IfcSelectorUI.draw(context, self.layout)
 
 
